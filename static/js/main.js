@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Image upload handling
     const uploadForm = document.getElementById('upload-form');
     const uploadArea = document.querySelector('.upload-area');
+    const MAX_FILE_SIZE = 32 * 1024 * 1024; // 32MB in bytes
     
     if (uploadArea) {
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -113,9 +114,35 @@ document.addEventListener('DOMContentLoaded', () => {
             const files = dt.files;
             handleFiles(files);
         });
+
+        // Add file input change handler
+        const fileInput = uploadArea.querySelector('input[type="file"]');
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                handleFiles(e.target.files);
+            });
+        }
+    }
+
+    function showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+        errorDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        uploadForm.insertAdjacentElement('beforebegin', errorDiv);
     }
 
     function handleFiles(files) {
+        // Validate file sizes before upload
+        const oversizedFiles = Array.from(files).filter(file => file.size > MAX_FILE_SIZE);
+        if (oversizedFiles.length > 0) {
+            const fileList = oversizedFiles.map(f => f.name).join(', ');
+            showError(`The following files exceed the 32MB size limit: ${fileList}`);
+            return;
+        }
+
         const formData = new FormData();
         Array.from(files).forEach(file => {
             formData.append('files[]', file);
@@ -125,13 +152,24 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 413) {
+                    throw new Error('File size too large. Maximum size is 32MB.');
+                }
+                throw new Error('Upload failed. Please try again.');
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 window.location.href = '/';
             }
         })
-        .catch(error => console.error('Error:', error));
+        .catch(error => {
+            showError(error.message);
+            console.error('Error:', error);
+        });
     }
 
     // Modal image viewing

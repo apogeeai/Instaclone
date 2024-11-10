@@ -80,3 +80,16 @@ def delete_image(image_id):
     db.session.commit()
     
     return jsonify({'success': True})
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    """Handle 413 Request Entity Too Large error"""
+    if request.path == '/upload':
+        if request.headers.get('Accept') == 'application/json':
+            return jsonify({
+                'error': 'File size too large',
+                'message': 'The uploaded file exceeds the maximum size of 32MB.'
+            }), 413
+        flash('File size too large. Maximum size is 32MB.', 'error')
+        return redirect(url_for('upload'))
+    return 'File too large!', 413
