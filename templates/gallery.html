@@ -8,11 +8,16 @@
              alt="{{ image.original_filename }}"
              data-img-src="{{ url_for('static', filename='uploads/' + image.filename) }}">
         <div class="gallery-item-overlay">
-            <button class="btn btn-danger delete-image" 
-                    onclick="return confirm('Are you sure you want to delete this image?')"
-                    data-image-id="{{ image.id }}">
-                <i class="fas fa-trash"></i>
-            </button>
+            <div class="image-actions">
+                <button class="btn btn-light view-image">
+                    <i class="fas fa-search"></i>
+                </button>
+                <button class="btn btn-danger delete-image" 
+                        onclick="return confirm('Are you sure you want to delete this image?')"
+                        data-image-id="{{ image.id }}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         </div>
     </div>
     {% endfor %}

@@ -26,12 +26,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const imageModal = new bootstrap.Modal(imageModalElement);
     const modalImage = document.querySelector('.modal-image');
 
-    // Add click event listeners to gallery images
+    // Add click event listeners to gallery images and view buttons
     const setupImageClickHandlers = () => {
-        document.querySelectorAll('.gallery-item img').forEach(img => {
-            img.addEventListener('click', (e) => {
+        document.querySelectorAll('.gallery-item .view-image').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const img = e.currentTarget.closest('.gallery-item').querySelector('img');
                 modalImage.classList.remove('loaded');
-                modalImage.src = e.target.getAttribute('data-img-src');
+                modalImage.src = img.getAttribute('data-img-src');
                 modalImage.onload = () => modalImage.classList.add('loaded');
                 imageModal.show();
             });
@@ -89,11 +91,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                  alt="${image.original_filename}"
                                  data-img-src="${image.url}">
                             <div class="gallery-item-overlay">
-                                <button class="btn btn-danger delete-image" 
-                                        onclick="return confirm('Are you sure you want to delete this image?')"
-                                        data-image-id="${image.id}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <div class="image-actions">
+                                    <button class="btn btn-light view-image">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                    <button class="btn btn-danger delete-image" 
+                                            onclick="return confirm('Are you sure you want to delete this image?')"
+                                            data-image-id="${image.id}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                         `;
                         galleryContainer.appendChild(div);
@@ -116,8 +123,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     retryCount = 0; // Reset retry count on successful load
                 }
             } catch (error) {
-                console.error('Error loading more images:', error);
-                showNotification(error.message || 'Failed to load more images', 'error');
+                const errorMessage = error.message || 'Failed to load more images';
+                console.error('Error loading more images:', errorMessage);
+                showNotification(errorMessage, 'error');
                 if (retryCount < MAX_RETRIES) {
                     retryCount++;
                     showNotification(`Loading failed. Retrying... (${retryCount}/${MAX_RETRIES})`, 'warning');
@@ -180,8 +188,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(data.message || 'Failed to delete image');
                 }
             } catch (error) {
-                console.error('Error deleting image:', error);
-                showNotification(error.message || 'Error deleting image', 'error');
+                const errorMessage = error.message || 'Error deleting image';
+                console.error('Error deleting image:', errorMessage);
+                showNotification(errorMessage, 'error');
             }
         };
 
@@ -288,8 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(error => {
-            showNotification(error.message, 'danger');
-            console.error('Error:', error);
+            const errorMessage = error.message || 'Upload failed';
+            showNotification(errorMessage, 'danger');
+            console.error('Error:', errorMessage);
         });
     }
 });
