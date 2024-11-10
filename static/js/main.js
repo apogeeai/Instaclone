@@ -21,6 +21,32 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('theme', theme);
     });
 
+    // Initialize modal
+    const imageModalElement = document.getElementById('imageModal');
+    const imageModal = new bootstrap.Modal(imageModalElement);
+    const modalImage = document.querySelector('.modal-image');
+
+    // Add click event listeners to gallery images
+    const setupImageClickHandlers = () => {
+        document.querySelectorAll('.gallery-item img').forEach(img => {
+            img.addEventListener('click', (e) => {
+                modalImage.classList.remove('loaded');
+                modalImage.src = e.target.getAttribute('data-img-src');
+                modalImage.onload = () => modalImage.classList.add('loaded');
+                imageModal.show();
+            });
+        });
+    };
+
+    // Initial setup of image click handlers
+    setupImageClickHandlers();
+
+    // Reset modal image when modal is hidden
+    imageModalElement.addEventListener('hidden.bs.modal', () => {
+        modalImage.classList.remove('loaded');
+        modalImage.src = '';
+    });
+
     // Infinite scroll implementation
     const galleryContainer = document.getElementById('gallery-container');
     const loadingIndicator = document.getElementById('loading-indicator');
@@ -61,8 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         div.innerHTML = `
                             <img src="${image.url}"
                                  alt="${image.original_filename}"
-                                 data-bs-toggle="modal"
-                                 data-bs-target="#imageModal"
                                  data-img-src="${image.url}">
                             <div class="gallery-item-overlay">
                                 <button class="btn btn-danger delete-image" 
@@ -83,6 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Re-append loading indicator at the end
                     galleryContainer.appendChild(loadingIndicator);
+                    
+                    // Setup click handlers for new images
+                    setupImageClickHandlers();
                     
                     galleryContainer.dataset.nextPage = data.next_page;
                     galleryContainer.dataset.hasNext = data.has_next;
@@ -263,40 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => {
             showNotification(error.message, 'danger');
             console.error('Error:', error);
-        });
-    }
-
-    // Modal image viewing with improved loading and transitions
-    const imageModal = document.getElementById('imageModal');
-    if (imageModal) {
-        const modalImg = imageModal.querySelector('.modal-image');
-        
-        imageModal.addEventListener('show.bs.modal', event => {
-            const button = event.relatedTarget;
-            const imgSrc = button.getAttribute('data-img-src');
-            
-            // Reset modal image state
-            modalImg.classList.remove('loaded');
-            modalImg.src = '';
-            
-            // Load new image
-            modalImg.src = imgSrc;
-            modalImg.onload = () => {
-                modalImg.classList.add('loaded');
-            };
-            
-            modalImg.onerror = () => {
-                showNotification('Failed to load image', 'error');
-                const modal = bootstrap.Modal.getInstance(imageModal);
-                if (modal) {
-                    modal.hide();
-                }
-            };
-        });
-        
-        imageModal.addEventListener('hidden.bs.modal', () => {
-            modalImg.classList.remove('loaded');
-            modalImg.src = '';
         });
     }
 });

@@ -6,8 +6,6 @@
     <div class="gallery-item" data-image-id="{{ image.id }}">
         <img src="{{ url_for('static', filename='uploads/' + image.filename) }}"
              alt="{{ image.original_filename }}"
-             data-bs-toggle="modal"
-             data-bs-target="#imageModal"
              data-img-src="{{ url_for('static', filename='uploads/' + image.filename) }}">
         <div class="gallery-item-overlay">
             <button class="btn btn-danger delete-image" 
@@ -25,8 +23,8 @@
     </div>
 </div>
 
-<!-- Image Modal -->
-<div class="modal fade" id="imageModal" tabindex="-1">
+<!-- Image Modal with proper z-index -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true" style="z-index: 1050;">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-body text-center p-0">
