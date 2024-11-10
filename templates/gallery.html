@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="gallery-grid">
+    {% for image in images %}
+    <div class="gallery-item">
+        <img src="{{ url_for('static', filename='uploads/' + image.filename) }}"
+             alt="{{ image.original_filename }}"
+             data-bs-toggle="modal"
+             data-bs-target="#imageModal"
+             data-img-src="{{ url_for('static', filename='uploads/' + image.filename) }}">
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-body text-center p-0">
+                <img src="" class="modal-image" alt="Full size image">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
