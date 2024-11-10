@@ -1,14 +1,27 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div class="gallery-controls mb-4">
+    <button id="delete-all" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete all images?')">
+        Delete All Images
+    </button>
+</div>
+
 <div class="gallery-grid" id="gallery-container" data-next-page="2" data-has-next="{{ 'true' if has_next else 'false' }}">
     {% for image in images %}
-    <div class="gallery-item">
+    <div class="gallery-item" data-image-id="{{ image.id }}">
         <img src="{{ url_for('static', filename='uploads/' + image.filename) }}"
              alt="{{ image.original_filename }}"
              data-bs-toggle="modal"
              data-bs-target="#imageModal"
              data-img-src="{{ url_for('static', filename='uploads/' + image.filename) }}">
+        <div class="gallery-item-overlay">
+            <button class="btn btn-danger delete-image" 
+                    onclick="return confirm('Are you sure you want to delete this image?')"
+                    data-image-id="{{ image.id }}">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
     </div>
     {% endfor %}
 </div>

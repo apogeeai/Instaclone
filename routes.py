@@ -36,50 +36,90 @@ def load_more(page):
 def upload():
     if request.method == 'POST':
         if 'files[]' not in request.files:
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': 'No files selected'}), 400
             flash('No files selected', 'error')
             return redirect(request.url)
 
         files = request.files.getlist('files[]')
         
         for file in files:
-            if file and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                new_filename = f"{timestamp}_{filename}"
+            if not file or not file.filename:
+                continue
                 
-                # Save the file
-                file_path = save_image(file, new_filename)
+            if not allowed_file(file.filename):
+                continue
                 
-                if file_path:
-                    # Create database entry
-                    image = Image(
-                        filename=new_filename,
-                        original_filename=filename,
-                        file_size=os.path.getsize(file_path),
-                        mime_type=file.content_type
-                    )
-                    db.session.add(image)
-                    
-        db.session.commit()
-        flash('Images uploaded successfully!', 'success')
-        return redirect(url_for('index'))
+            filename = secure_filename(str(file.filename))
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            new_filename = f"{timestamp}_{filename}"
+            
+            # Save the file
+            file_path = save_image(file, new_filename)
+            
+            if file_path:
+                # Create database entry
+                image = Image()
+                image.filename = new_filename
+                image.original_filename = filename
+                image.file_size = os.path.getsize(file_path)
+                image.mime_type = file.content_type
+                db.session.add(image)
+                
+        try:
+            db.session.commit()
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': True, 'message': 'Images uploaded successfully'})
+            flash('Images uploaded successfully!', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            db.session.rollback()
+            if request.headers.get('Accept') == 'application/json':
+                return jsonify({'success': False, 'message': str(e)}), 500
+            flash(f'Error uploading images: {str(e)}', 'error')
+            return redirect(request.url)
     
     return render_template('upload.html')
 
-@app.route('/delete/<int:image_id>', methods=['POST'])
+@app.route('/delete/<int:image_id>', methods=['DELETE'])
 def delete_image(image_id):
-    image = Image.query.get_or_404(image_id)
-    
-    # Delete file from filesystem
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], image.filename)
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    
-    # Delete database entry
-    db.session.delete(image)
-    db.session.commit()
-    
-    return jsonify({'success': True})
+    try:
+        image = Image.query.get_or_404(image_id)
+        
+        # Delete file from filesystem
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], image.filename)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Delete database entry
+        db.session.delete(image)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Image deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@app.route('/delete_all', methods=['DELETE'])
+def delete_all_images():
+    try:
+        # Get all images
+        images = Image.query.all()
+        
+        # Delete all files from filesystem
+        for image in images:
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], image.filename)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        
+        # Delete all database entries
+        Image.query.delete()
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'All images deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.errorhandler(413)
 def request_entity_too_large(error):

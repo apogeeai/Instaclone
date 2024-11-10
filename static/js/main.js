@@ -47,14 +47,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.images.forEach(image => {
                         const div = document.createElement('div');
                         div.className = 'gallery-item';
+                        div.dataset.imageId = image.id;
                         div.innerHTML = `
                             <img src="${image.url}"
                                  alt="${image.original_filename}"
                                  data-bs-toggle="modal"
                                  data-bs-target="#imageModal"
                                  data-img-src="${image.url}">
+                            <div class="gallery-item-overlay">
+                                <button class="btn btn-danger delete-image" 
+                                        onclick="return confirm('Are you sure you want to delete this image?')"
+                                        data-image-id="${image.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         `;
                         galleryContainer.appendChild(div);
+                        
+                        // Add delete handler to new image
+                        const deleteBtn = div.querySelector('.delete-image');
+                        if (deleteBtn) {
+                            deleteBtn.addEventListener('click', handleDeleteImage);
+                        }
                     });
                     
                     galleryContainer.dataset.nextPage = data.next_page;
@@ -80,6 +94,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         
         observer.observe(loadingIndicator);
+
+        // Delete image handler
+        const handleDeleteImage = async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            const imageId = event.currentTarget.dataset.imageId;
+            const galleryItem = document.querySelector(`.gallery-item[data-image-id="${imageId}"]`);
+            
+            try {
+                const response = await fetch(`/delete/${imageId}`, {
+                    method: 'DELETE',
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    galleryItem.remove();
+                    showNotification('Image deleted successfully', 'success');
+                } else {
+                    showNotification('Failed to delete image', 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting image:', error);
+                showNotification('Error deleting image', 'error');
+            }
+        };
+
+        // Delete all images handler
+        const deleteAllBtn = document.getElementById('delete-all');
+        if (deleteAllBtn) {
+            deleteAllBtn.addEventListener('click', async (event) => {
+                event.preventDefault();
+                
+                try {
+                    const response = await fetch('/delete_all', {
+                        method: 'DELETE',
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const galleryItems = document.querySelectorAll('.gallery-item');
+                        galleryItems.forEach(item => item.remove());
+                        showNotification('All images deleted successfully', 'success');
+                    } else {
+                        showNotification('Failed to delete all images', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting all images:', error);
+                    showNotification('Error deleting all images', 'error');
+                }
+            });
+        }
+
+        // Add delete handlers to existing images
+        document.querySelectorAll('.delete-image').forEach(btn => {
+            btn.addEventListener('click', handleDeleteImage);
+        });
     }
 
     // Image upload handling
@@ -124,14 +195,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
-        errorDiv.innerHTML = `
+    function showNotification(message, type = 'success') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
-        uploadForm.insertAdjacentElement('beforebegin', errorDiv);
+        document.querySelector('.container').insertAdjacentElement('afterbegin', alertDiv);
+        
+        // Auto-dismiss after 3 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
     }
 
     function handleFiles(files) {
@@ -139,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const oversizedFiles = Array.from(files).filter(file => file.size > MAX_FILE_SIZE);
         if (oversizedFiles.length > 0) {
             const fileList = oversizedFiles.map(f => f.name).join(', ');
-            showError(`The following files exceed the 32MB size limit: ${fileList}`);
+            showNotification(`The following files exceed the 32MB size limit: ${fileList}`, 'danger');
             return;
         }
 
@@ -167,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(error => {
-            showError(error.message);
+            showNotification(error.message, 'danger');
             console.error('Error:', error);
         });
     }

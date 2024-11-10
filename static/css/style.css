@@ -43,6 +43,28 @@ body {
     animation: fadeInUp 0.5s ease forwards;
 }
 
+.gallery-item-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.gallery-item:hover .gallery-item-overlay {
+    opacity: 1;
+}
+
+.delete-image {
+    z-index: 2;
+}
+
 @keyframes fadeInUp {
     to {
         opacity: 1;
@@ -100,4 +122,10 @@ body {
 .spinner-border {
     width: 3rem;
     height: 3rem;
+}
+
+.gallery-controls {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem;
 }
