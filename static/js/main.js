@@ -101,7 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 } else {
                     showNotification('Failed to load more images. Please refresh the page.', 'error');
-                    // Disable infinite scroll on max retries
                     observer.disconnect();
                 }
             } finally {
@@ -113,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
         
-        // Update observer setup with improved configuration
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting && !loading && galleryContainer.dataset.hasNext === 'true') {
@@ -140,17 +138,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`/delete/${imageId}`, {
                     method: 'DELETE',
                 });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 
                 if (data.success) {
                     galleryItem.remove();
                     showNotification('Image deleted successfully', 'success');
                 } else {
-                    showNotification('Failed to delete image', 'error');
+                    throw new Error(data.message || 'Failed to delete image');
                 }
             } catch (error) {
                 console.error('Error deleting image:', error);
-                showNotification('Error deleting image', 'error');
+                showNotification(error.message || 'Error deleting image', 'error');
             }
         };
 
@@ -262,14 +266,37 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Modal image viewing
+    // Modal image viewing with improved loading and transitions
     const imageModal = document.getElementById('imageModal');
     if (imageModal) {
+        const modalImg = imageModal.querySelector('.modal-image');
+        
         imageModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
             const imgSrc = button.getAttribute('data-img-src');
-            const modalImg = imageModal.querySelector('.modal-image');
+            
+            // Reset modal image state
+            modalImg.classList.remove('loaded');
+            modalImg.src = '';
+            
+            // Load new image
             modalImg.src = imgSrc;
+            modalImg.onload = () => {
+                modalImg.classList.add('loaded');
+            };
+            
+            modalImg.onerror = () => {
+                showNotification('Failed to load image', 'error');
+                const modal = bootstrap.Modal.getInstance(imageModal);
+                if (modal) {
+                    modal.hide();
+                }
+            };
+        });
+        
+        imageModal.addEventListener('hidden.bs.modal', () => {
+            modalImg.classList.remove('loaded');
+            modalImg.src = '';
         });
     }
 });

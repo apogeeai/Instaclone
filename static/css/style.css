@@ -6,7 +6,7 @@
 }
 
 [data-theme="dark"] {
-    --bg-primary: #16202a;
+    --bg-primary: #141414;
     --text-primary: #ffffff;
     --border-color: #363636;
     --modal-bg: rgba(0, 0, 0, 0.95);
@@ -99,6 +99,27 @@ body {
     max-height: 90vh;
     width: auto;
     max-width: 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.modal-image.loaded {
+    opacity: 1;
+}
+
+.modal-dialog {
+    margin: 1rem;
+    max-width: 90vw;
+}
+
+#loading-indicator {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
 }
 
 .upload-area {
@@ -112,14 +133,4 @@ body {
 .upload-area.dragover {
     background-color: rgba(0, 123, 255, 0.1);
     border-color: #007bff;
-}
-
-#loading-indicator {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-}
-
-.spinner-border {
-    width: 3rem;
-    height: 3rem;
 }
