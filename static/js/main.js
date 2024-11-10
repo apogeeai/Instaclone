@@ -23,12 +23,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize modal and gallery state
     const imageModalElement = document.getElementById('imageModal');
-    const imageModal = new bootstrap.Modal(imageModalElement);
-    const modalImage = document.querySelector('.modal-image');
+    let imageModal;
+    let modalImage;
     let currentImageIndex = 0;
     let galleryImages = [];
     let slideshowInterval = null;
     const SLIDESHOW_INTERVAL = 3000; // 3 seconds
+
+    if (imageModalElement) {
+        imageModal = new bootstrap.Modal(imageModalElement);
+        modalImage = imageModalElement.querySelector('.modal-image');
+        
+        // Initialize modal controls after modal is shown
+        imageModalElement.addEventListener('shown.bs.modal', () => {
+            setupModalNavigation();
+            imageModalElement.focus();
+        });
+    }
 
     // Gallery Navigation Functions
     const updateGalleryImages = () => {
@@ -37,14 +48,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const showImage = (index) => {
         if (index >= 0 && index < galleryImages.length) {
-            currentImageIndex = index;
-            modalImage.classList.remove('loaded');
-            modalImage.src = galleryImages[index].getAttribute('data-img-src');
-            modalImage.onload = () => modalImage.classList.add('loaded');
-            
-            // Update navigation buttons
-            document.querySelector('.modal-prev').classList.toggle('disabled', currentImageIndex === 0);
-            document.querySelector('.modal-next').classList.toggle('disabled', currentImageIndex === galleryImages.length - 1);
+            try {
+                currentImageIndex = index;
+                modalImage.classList.remove('loaded');
+                modalImage.src = galleryImages[index].getAttribute('data-img-src');
+                modalImage.onload = () => modalImage.classList.add('loaded');
+                modalImage.onerror = (error) => {
+                    console.error('Error loading image:', error);
+                    showNotification('Failed to load image', 'error');
+                };
+                
+                // Update navigation buttons
+                document.querySelector('.modal-prev').classList.toggle('disabled', currentImageIndex === 0);
+                document.querySelector('.modal-next').classList.toggle('disabled', currentImageIndex === galleryImages.length - 1);
+            } catch (error) {
+                console.error('Error showing image:', error);
+                showNotification('Failed to show image', 'error');
+            }
         }
     };
 
@@ -114,18 +134,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Setup image click handlers
     const setupImageClickHandlers = () => {
         updateGalleryImages();
-        document.querySelectorAll('.gallery-item .view-image').forEach((btn, index) => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                currentImageIndex = index;
-                showImage(currentImageIndex);
-                imageModal.show();
-            });
+        document.querySelectorAll('.gallery-item').forEach((item, index) => {
+            const viewBtn = item.querySelector('.view-image');
+            if (viewBtn) {
+                viewBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    currentImageIndex = index;
+                    showImage(currentImageIndex);
+                    imageModal.show();
+                });
+            }
         });
     };
 
-    // Initialize modal navigation
-    setupModalNavigation();
+    // Initialize click handlers
     setupImageClickHandlers();
 
     // Reset modal state when hidden
@@ -135,11 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (slideshowInterval) {
             toggleSlideshow(); // Stop slideshow
         }
-    });
-
-    // Focus trap for keyboard navigation
-    imageModalElement.addEventListener('shown.bs.modal', () => {
-        imageModalElement.focus();
     });
 
     // Infinite scroll implementation
