@@ -28,12 +28,29 @@
     </div>
 </div>
 
-<!-- Image Modal with proper z-index -->
+<!-- Enhanced Image Modal with navigation -->
 <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true" style="z-index: 1050;">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-body text-center p-0">
+            <div class="modal-body text-center p-0 position-relative">
+                <button type="button" class="btn-close modal-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                
+                <!-- Navigation Arrows -->
+                <button class="modal-nav modal-prev" aria-label="Previous image">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="modal-nav modal-next" aria-label="Next image">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+                
                 <img src="" class="modal-image" alt="Full size image">
+                
+                <!-- Slideshow Controls -->
+                <div class="modal-controls">
+                    <button class="btn btn-light btn-sm slideshow-toggle">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

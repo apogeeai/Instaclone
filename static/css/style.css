@@ -122,6 +122,79 @@ body {
     max-width: 90vw;
 }
 
+/* Modal Navigation Styles */
+.modal-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    z-index: 1060;
+}
+
+.modal-nav:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.modal-prev {
+    left: 1rem;
+}
+
+.modal-next {
+    right: 1rem;
+}
+
+.modal-nav.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    z-index: 1060;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    color: white;
+}
+
+.modal-controls {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1060;
+    display: flex;
+    gap: 0.5rem;
+}
+
+.slideshow-toggle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+}
+
+.slideshow-toggle:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
 #loading-indicator {
     margin-top: 2rem;
     margin-bottom: 2rem;

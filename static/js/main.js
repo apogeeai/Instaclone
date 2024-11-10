@@ -21,32 +21,125 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('theme', theme);
     });
 
-    // Initialize modal
+    // Initialize modal and gallery state
     const imageModalElement = document.getElementById('imageModal');
     const imageModal = new bootstrap.Modal(imageModalElement);
     const modalImage = document.querySelector('.modal-image');
+    let currentImageIndex = 0;
+    let galleryImages = [];
+    let slideshowInterval = null;
+    const SLIDESHOW_INTERVAL = 3000; // 3 seconds
 
-    // Add click event listeners to gallery images and view buttons
+    // Gallery Navigation Functions
+    const updateGalleryImages = () => {
+        galleryImages = Array.from(document.querySelectorAll('.gallery-item img'));
+    };
+
+    const showImage = (index) => {
+        if (index >= 0 && index < galleryImages.length) {
+            currentImageIndex = index;
+            modalImage.classList.remove('loaded');
+            modalImage.src = galleryImages[index].getAttribute('data-img-src');
+            modalImage.onload = () => modalImage.classList.add('loaded');
+            
+            // Update navigation buttons
+            document.querySelector('.modal-prev').classList.toggle('disabled', currentImageIndex === 0);
+            document.querySelector('.modal-next').classList.toggle('disabled', currentImageIndex === galleryImages.length - 1);
+        }
+    };
+
+    const navigateGallery = (direction) => {
+        const newIndex = currentImageIndex + direction;
+        if (newIndex >= 0 && newIndex < galleryImages.length) {
+            showImage(newIndex);
+        }
+    };
+
+    // Slideshow Functions
+    const toggleSlideshow = () => {
+        const slideshowButton = document.querySelector('.slideshow-toggle i');
+        if (slideshowInterval) {
+            clearInterval(slideshowInterval);
+            slideshowInterval = null;
+            slideshowButton.className = 'fas fa-play';
+        } else {
+            slideshowInterval = setInterval(() => {
+                if (currentImageIndex < galleryImages.length - 1) {
+                    navigateGallery(1);
+                } else {
+                    showImage(0); // Loop back to start
+                }
+            }, SLIDESHOW_INTERVAL);
+            slideshowButton.className = 'fas fa-pause';
+        }
+    };
+
+    // Event Listeners for Modal Navigation
+    const setupModalNavigation = () => {
+        // Previous button click
+        document.querySelector('.modal-prev').addEventListener('click', () => {
+            navigateGallery(-1);
+        });
+
+        // Next button click
+        document.querySelector('.modal-next').addEventListener('click', () => {
+            navigateGallery(1);
+        });
+
+        // Slideshow toggle
+        document.querySelector('.slideshow-toggle').addEventListener('click', toggleSlideshow);
+
+        // Keyboard navigation
+        imageModalElement.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') {
+                navigateGallery(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateGallery(1);
+            } else if (e.key === 'Escape') {
+                imageModal.hide();
+            }
+        });
+
+        // Mouse wheel navigation
+        imageModalElement.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                navigateGallery(-1);
+            } else {
+                navigateGallery(1);
+            }
+        });
+    };
+
+    // Setup image click handlers
     const setupImageClickHandlers = () => {
-        document.querySelectorAll('.gallery-item .view-image').forEach(btn => {
+        updateGalleryImages();
+        document.querySelectorAll('.gallery-item .view-image').forEach((btn, index) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const img = e.currentTarget.closest('.gallery-item').querySelector('img');
-                modalImage.classList.remove('loaded');
-                modalImage.src = img.getAttribute('data-img-src');
-                modalImage.onload = () => modalImage.classList.add('loaded');
+                currentImageIndex = index;
+                showImage(currentImageIndex);
                 imageModal.show();
             });
         });
     };
 
-    // Initial setup of image click handlers
+    // Initialize modal navigation
+    setupModalNavigation();
     setupImageClickHandlers();
 
-    // Reset modal image when modal is hidden
+    // Reset modal state when hidden
     imageModalElement.addEventListener('hidden.bs.modal', () => {
         modalImage.classList.remove('loaded');
         modalImage.src = '';
+        if (slideshowInterval) {
+            toggleSlideshow(); // Stop slideshow
+        }
+    });
+
+    // Focus trap for keyboard navigation
+    imageModalElement.addEventListener('shown.bs.modal', () => {
+        imageModalElement.focus();
     });
 
     // Infinite scroll implementation
@@ -73,13 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(`/load_more/${nextPage}`);
                 if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
                 
                 if (data.images.length > 0) {
-                    // Remove loading indicator temporarily to append new items
                     loadingIndicator.remove();
                     
                     data.images.forEach(image => {
@@ -105,37 +196,29 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                         galleryContainer.appendChild(div);
                         
-                        // Add delete handler to new image
                         const deleteBtn = div.querySelector('.delete-image');
                         if (deleteBtn) {
                             deleteBtn.addEventListener('click', handleDeleteImage);
                         }
                     });
                     
-                    // Re-append loading indicator at the end
                     galleryContainer.appendChild(loadingIndicator);
-                    
-                    // Setup click handlers for new images
                     setupImageClickHandlers();
                     
                     galleryContainer.dataset.nextPage = data.next_page;
                     galleryContainer.dataset.hasNext = data.has_next;
-                    retryCount = 0; // Reset retry count on successful load
+                    retryCount = 0;
                 }
             } catch (error) {
-                const errorMessage = error.message || 'Failed to load more images';
-                console.error('Error loading more images:', errorMessage);
-                showNotification(errorMessage, 'error');
+                console.error('Error loading more images:', error);
                 if (retryCount < MAX_RETRIES) {
                     retryCount++;
-                    showNotification(`Loading failed. Retrying... (${retryCount}/${MAX_RETRIES})`, 'warning');
                     setTimeout(() => {
                         loading = false;
                         loadMoreImages();
                     }, RETRY_DELAY);
                     return;
                 } else {
-                    showNotification('Failed to load more images. Please refresh the page.', 'error');
                     observer.disconnect();
                 }
             } finally {
@@ -143,7 +226,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadingIndicator.classList.add('d-none');
                 }
                 loading = false;
-                loadingIndicator.classList.remove('d-none');
             }
         };
         
@@ -174,23 +256,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'DELETE',
                 });
                 
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({}));
-                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-                }
-                
                 const data = await response.json();
                 
                 if (data.success) {
                     galleryItem.remove();
+                    updateGalleryImages();
                     showNotification('Image deleted successfully', 'success');
                 } else {
                     throw new Error(data.message || 'Failed to delete image');
                 }
             } catch (error) {
-                const errorMessage = error.message || 'Error deleting image';
-                console.error('Error deleting image:', errorMessage);
-                showNotification(errorMessage, 'error');
+                console.error('Error deleting image:', error);
+                showNotification(error.message || 'Error deleting image', 'error');
             }
         };
 
@@ -251,14 +328,12 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         document.querySelector('.container').insertAdjacentElement('afterbegin', alertDiv);
         
-        // Auto-dismiss after 3 seconds
         setTimeout(() => {
             alertDiv.remove();
         }, 3000);
     }
 
     function handleFiles(files) {
-        // Validate file sizes before upload
         const oversizedFiles = Array.from(files).filter(file => file.size > MAX_FILE_SIZE);
         if (oversizedFiles.length > 0) {
             const fileList = oversizedFiles.map(f => f.name).join(', ');
@@ -297,9 +372,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         })
         .catch(error => {
-            const errorMessage = error.message || 'Upload failed';
-            showNotification(errorMessage, 'danger');
-            console.error('Error:', errorMessage);
+            showNotification(error.message || 'Upload failed', 'danger');
+            console.error('Error:', error);
         });
     }
 });
