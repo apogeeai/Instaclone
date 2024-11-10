@@ -6,10 +6,31 @@ from app import app, db
 from models import Image
 from utils import allowed_file, save_image
 
+IMAGES_PER_PAGE = 12
+
 @app.route('/')
 def index():
-    images = Image.query.order_by(Image.created_at.desc()).all()
-    return render_template('gallery.html', images=images)
+    page = 1
+    images = Image.query.order_by(Image.created_at.desc()).paginate(
+        page=page, per_page=IMAGES_PER_PAGE, error_out=False)
+    return render_template('gallery.html', images=images.items, has_next=images.has_next)
+
+@app.route('/load_more/<int:page>')
+def load_more(page):
+    images = Image.query.order_by(Image.created_at.desc()).paginate(
+        page=page, per_page=IMAGES_PER_PAGE, error_out=False)
+    
+    images_data = [{
+        'id': image.id,
+        'url': url_for('static', filename=f'uploads/{image.filename}'),
+        'original_filename': image.original_filename
+    } for image in images.items]
+    
+    return jsonify({
+        'images': images_data,
+        'has_next': images.has_next,
+        'next_page': page + 1 if images.has_next else None
+    })
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():

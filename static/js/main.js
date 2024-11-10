@@ -21,6 +21,67 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('theme', theme);
     });
 
+    // Infinite scroll implementation
+    const galleryContainer = document.getElementById('gallery-container');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    
+    if (galleryContainer) {
+        let loading = false;
+        
+        const loadMoreImages = async () => {
+            if (loading) return;
+            
+            const nextPage = parseInt(galleryContainer.dataset.nextPage);
+            const hasNext = galleryContainer.dataset.hasNext === 'true';
+            
+            if (!hasNext) return;
+            
+            loading = true;
+            loadingIndicator.classList.remove('d-none');
+            
+            try {
+                const response = await fetch(`/load_more/${nextPage}`);
+                const data = await response.json();
+                
+                if (data.images.length > 0) {
+                    data.images.forEach(image => {
+                        const div = document.createElement('div');
+                        div.className = 'gallery-item';
+                        div.innerHTML = `
+                            <img src="${image.url}"
+                                 alt="${image.original_filename}"
+                                 data-bs-toggle="modal"
+                                 data-bs-target="#imageModal"
+                                 data-img-src="${image.url}">
+                        `;
+                        galleryContainer.appendChild(div);
+                    });
+                    
+                    galleryContainer.dataset.nextPage = data.next_page;
+                    galleryContainer.dataset.hasNext = data.has_next;
+                }
+            } catch (error) {
+                console.error('Error loading more images:', error);
+            } finally {
+                loading = false;
+                loadingIndicator.classList.add('d-none');
+            }
+        };
+        
+        // Intersection Observer for infinite scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    loadMoreImages();
+                }
+            });
+        }, {
+            rootMargin: '100px',
+        });
+        
+        observer.observe(loadingIndicator);
+    }
+
     // Image upload handling
     const uploadForm = document.getElementById('upload-form');
     const uploadArea = document.querySelector('.upload-area');

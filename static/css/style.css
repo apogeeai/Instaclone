@@ -38,6 +38,16 @@ body {
     cursor: pointer;
     overflow: hidden;
     border-radius: 3px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .gallery-item img {
@@ -80,4 +90,14 @@ body {
 .upload-area.dragover {
     background-color: rgba(0, 123, 255, 0.1);
     border-color: #007bff;
+}
+
+#loading-indicator {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
 }

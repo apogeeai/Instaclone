@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="gallery-grid">
+<div class="gallery-grid" id="gallery-container" data-next-page="2" data-has-next="{{ 'true' if has_next else 'false' }}">
     {% for image in images %}
     <div class="gallery-item">
         <img src="{{ url_for('static', filename='uploads/' + image.filename) }}"
@@ -11,6 +11,13 @@
              data-img-src="{{ url_for('static', filename='uploads/' + image.filename) }}">
     </div>
     {% endfor %}
+</div>
+
+<!-- Loading Indicator -->
+<div id="loading-indicator" class="text-center d-none mb-4">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
 </div>
 
 <!-- Image Modal -->
