@@ -121,32 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Delete all images handler
-        const deleteAllBtn = document.getElementById('delete-all');
-        if (deleteAllBtn) {
-            deleteAllBtn.addEventListener('click', async (event) => {
-                event.preventDefault();
-                
-                try {
-                    const response = await fetch('/delete_all', {
-                        method: 'DELETE',
-                    });
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        const galleryItems = document.querySelectorAll('.gallery-item');
-                        galleryItems.forEach(item => item.remove());
-                        showNotification('All images deleted successfully', 'success');
-                    } else {
-                        showNotification('Failed to delete all images', 'error');
-                    }
-                } catch (error) {
-                    console.error('Error deleting all images:', error);
-                    showNotification('Error deleting all images', 'error');
-                }
-            });
-        }
-
         // Add delete handlers to existing images
         document.querySelectorAll('.delete-image').forEach(btn => {
             btn.addEventListener('click', handleDeleteImage);

@@ -1,12 +1,6 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="gallery-controls mb-4">
-    <button id="delete-all" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete all images?')">
-        Delete All Images
-    </button>
-</div>
-
 <div class="gallery-grid" id="gallery-container" data-next-page="2" data-has-next="{{ 'true' if has_next else 'false' }}">
     {% for image in images %}
     <div class="gallery-item" data-image-id="{{ image.id }}">

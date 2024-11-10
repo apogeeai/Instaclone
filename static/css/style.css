@@ -123,9 +123,3 @@ body {
     width: 3rem;
     height: 3rem;
 }
-
-.gallery-controls {
-    display: flex;
-    justify-content: flex-end;
-    padding: 1rem;
-}

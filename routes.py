@@ -100,27 +100,6 @@ def delete_image(image_id):
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)}), 500
 
-@app.route('/delete_all', methods=['DELETE'])
-def delete_all_images():
-    try:
-        # Get all images
-        images = Image.query.all()
-        
-        # Delete all files from filesystem
-        for image in images:
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], image.filename)
-            if os.path.exists(file_path):
-                os.remove(file_path)
-        
-        # Delete all database entries
-        Image.query.delete()
-        db.session.commit()
-        
-        return jsonify({'success': True, 'message': 'All images deleted successfully'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
 @app.errorhandler(413)
 def request_entity_too_large(error):
     """Handle 413 Request Entity Too Large error"""
