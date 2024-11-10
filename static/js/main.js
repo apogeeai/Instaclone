@@ -51,6 +51,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 
                 if (data.images.length > 0) {
+                    // Remove loading indicator temporarily to append new items
+                    loadingIndicator.remove();
+                    
                     data.images.forEach(image => {
                         const div = document.createElement('div');
                         div.className = 'gallery-item';
@@ -78,6 +81,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     });
                     
+                    // Re-append loading indicator at the end
+                    galleryContainer.appendChild(loadingIndicator);
+                    
                     galleryContainer.dataset.nextPage = data.next_page;
                     galleryContainer.dataset.hasNext = data.has_next;
                     retryCount = 0; // Reset retry count on successful load
@@ -101,10 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 if (retryCount >= MAX_RETRIES) {
                     loadingIndicator.classList.add('d-none');
-                } else {
-                    loading = false;
-                    loadingIndicator.classList.add('d-none');
                 }
+                loading = false;
+                loadingIndicator.classList.remove('d-none');
             }
         };
         
@@ -116,7 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }, {
-            rootMargin: '200px',
+            root: null,
+            rootMargin: '50px',
             threshold: 0.1
         });
         
@@ -227,20 +233,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
         fetch('/upload', {
             method: 'POST',
-            body: formData
+            body: formData,
+            headers: {
+                'Accept': 'application/json'
+            }
         })
         .then(response => {
             if (!response.ok) {
                 if (response.status === 413) {
                     throw new Error('File size too large. Maximum size is 32MB.');
                 }
-                throw new Error('Upload failed. Please try again.');
+                return response.json().then(data => {
+                    throw new Error(data.message || 'Upload failed. Please try again.');
+                });
             }
             return response.json();
         })
         .then(data => {
             if (data.success) {
                 window.location.href = '/';
+            } else {
+                throw new Error(data.message || 'Upload failed');
             }
         })
         .catch(error => {

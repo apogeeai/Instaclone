@@ -17,20 +17,33 @@ def index():
 
 @app.route('/load_more/<int:page>')
 def load_more(page):
-    images = Image.query.order_by(Image.created_at.desc()).paginate(
-        page=page, per_page=IMAGES_PER_PAGE, error_out=False)
-    
-    images_data = [{
-        'id': image.id,
-        'url': url_for('static', filename=f'uploads/{image.filename}'),
-        'original_filename': image.original_filename
-    } for image in images.items]
-    
-    return jsonify({
-        'images': images_data,
-        'has_next': images.has_next,
-        'next_page': page + 1 if images.has_next else None
-    })
+    try:
+        images = Image.query.order_by(Image.created_at.desc()).paginate(
+            page=page, per_page=IMAGES_PER_PAGE, error_out=False)
+        
+        if not images.items:
+            return jsonify({
+                'images': [],
+                'has_next': False,
+                'next_page': None
+            })
+        
+        images_data = [{
+            'id': image.id,
+            'url': url_for('static', filename=f'uploads/{image.filename}'),
+            'original_filename': image.original_filename
+        } for image in images.items]
+        
+        return jsonify({
+            'images': images_data,
+            'has_next': images.has_next,
+            'next_page': page + 1 if images.has_next else None
+        })
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'message': 'Failed to load more images'
+        }), 500
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
