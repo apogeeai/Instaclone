@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const galleryContainer = document.getElementById('gallery-container');
     const loadingIndicator = document.getElementById('loading-indicator');
     
-    if (galleryContainer) {
+    if (galleryContainer && loadingIndicator) {
         let loading = false;
         let retryCount = 0;
         const MAX_RETRIES = 3;
@@ -45,7 +45,8 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 const response = await fetch(`/load_more/${nextPage}`);
                 if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
                 }
                 const data = await response.json();
                 
@@ -82,7 +83,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     retryCount = 0; // Reset retry count on successful load
                 }
             } catch (error) {
-                console.error('Error loading more images:', error.message);
+                console.error('Error loading more images:', error);
+                showNotification(error.message || 'Failed to load more images', 'error');
                 if (retryCount < MAX_RETRIES) {
                     retryCount++;
                     showNotification(`Loading failed. Retrying... (${retryCount}/${MAX_RETRIES})`, 'warning');
@@ -106,15 +108,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
         
-        // Intersection Observer for infinite scroll
+        // Update observer setup with improved configuration
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting && !loading) {
+                if (entry.isIntersecting && !loading && galleryContainer.dataset.hasNext === 'true') {
                     loadMoreImages();
                 }
             });
         }, {
-            rootMargin: '100px',
+            rootMargin: '200px',
+            threshold: 0.1
         });
         
         observer.observe(loadingIndicator);
