@@ -27,6 +27,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (galleryContainer) {
         let loading = false;
+        let retryCount = 0;
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 2000; // 2 seconds
         
         const loadMoreImages = async () => {
             if (loading) return;
@@ -41,6 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             try {
                 const response = await fetch(`/load_more/${nextPage}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
                 
                 if (data.images.length > 0) {
@@ -73,19 +79,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     galleryContainer.dataset.nextPage = data.next_page;
                     galleryContainer.dataset.hasNext = data.has_next;
+                    retryCount = 0; // Reset retry count on successful load
                 }
             } catch (error) {
-                console.error('Error loading more images:', error);
+                console.error('Error loading more images:', error.message);
+                if (retryCount < MAX_RETRIES) {
+                    retryCount++;
+                    showNotification(`Loading failed. Retrying... (${retryCount}/${MAX_RETRIES})`, 'warning');
+                    setTimeout(() => {
+                        loading = false;
+                        loadMoreImages();
+                    }, RETRY_DELAY);
+                    return;
+                } else {
+                    showNotification('Failed to load more images. Please refresh the page.', 'error');
+                    // Disable infinite scroll on max retries
+                    observer.disconnect();
+                }
             } finally {
-                loading = false;
-                loadingIndicator.classList.add('d-none');
+                if (retryCount >= MAX_RETRIES) {
+                    loadingIndicator.classList.add('d-none');
+                } else {
+                    loading = false;
+                    loadingIndicator.classList.add('d-none');
+                }
             }
         };
         
         // Intersection Observer for infinite scroll
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
+                if (entry.isIntersecting && !loading) {
                     loadMoreImages();
                 }
             });

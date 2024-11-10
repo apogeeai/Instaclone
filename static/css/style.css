@@ -6,7 +6,7 @@
 }
 
 [data-theme="dark"] {
-    --bg-primary: #121212;
+    --bg-primary: #16202a;
     --text-primary: #ffffff;
     --border-color: #363636;
     --modal-bg: rgba(0, 0, 0, 0.95);
