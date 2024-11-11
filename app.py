@@ -1,12 +1,7 @@
 import os
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.orm import DeclarativeBase
+from models import db
 
-class Base(DeclarativeBase):
-    pass
-
-db = SQLAlchemy(model_class=Base)
 app = Flask(__name__)
 
 # Configuration
@@ -22,9 +17,14 @@ app.config["MAX_CONTENT_LENGTH"] = 32 * 1024 * 1024  # 32MB max file size
 # Ensure upload directory exists
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
+# Initialize the application
 db.init_app(app)
 
+# Import routes after app and db are created
+from routes import *
+
 with app.app_context():
-    import models
-    import routes
     db.create_all()
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
