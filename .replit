@@ -19,6 +19,14 @@ args = "Flask Web App"
 task = "workflow.run"
 args = "Flask Server"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flask App"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Flask Application"
+
 [[workflows.workflow]]
 name = "Flask Web App"
 author = "agent"
@@ -31,7 +39,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 main.py"
+args = "python3 app.py"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -47,6 +55,36 @@ task = "packager.installForAll"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 main.py"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Flask App"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 /home/runner/app.py"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Flask Application"
+author = "agent"
+
+[workflows.workflow.metadata]
+agentRequireRestartOnSave = false
+
+[[workflows.workflow.tasks]]
+task = "packager.installForAll"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 app.py"
 waitForPort = 5000
 
 [deployment]

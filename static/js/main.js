@@ -30,7 +30,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize images array
     function updateImagesList() {
-        images = Array.from(document.querySelectorAll('.gallery-item img'));
+        const imageElements = document.querySelectorAll('.gallery-item img');
+        images = Array.prototype.slice.call(imageElements);
     }
 
     // Show specific image in modal
@@ -67,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function() {
         slideshowToggle.innerHTML = '<i class="fas fa-pause"></i>';
         slideshowToggle.classList.add('active');
         
-        slideshowInterval = setInterval(() => {
+        slideshowInterval = setInterval(function() {
             if (currentImageIndex >= images.length - 1) {
                 showImage(0); // Loop back to first image
             } else {
@@ -96,12 +97,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event Listeners
     const galleryContainer = document.getElementById('gallery-container');
     if (galleryContainer) {
-        galleryContainer.addEventListener('click', (e) => {
+        galleryContainer.addEventListener('click', function(e) {
             const viewButton = e.target.closest('.view-image');
             if (!viewButton) return;
 
             const galleryItem = viewButton.closest('.gallery-item');
-            const index = Array.from(document.querySelectorAll('.gallery-item')).indexOf(galleryItem);
+            const items = Array.prototype.slice.call(document.querySelectorAll('.gallery-item'));
+            const index = items.indexOf(galleryItem);
             
             updateImagesList();
             showImage(index);
@@ -110,7 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Mouse wheel navigation
-    modalImage.addEventListener('wheel', (e) => {
+    modalImage.addEventListener('wheel', function(e) {
         e.preventDefault();
         if (e.deltaY > 0) {
             showNextImage();
@@ -120,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Keyboard navigation
-    document.addEventListener('keydown', (e) => {
+    document.addEventListener('keydown', function(e) {
         if (!imageModal.classList.contains('show')) return;
 
         switch(e.key) {
@@ -148,11 +150,11 @@ document.addEventListener('DOMContentLoaded', function() {
     slideshowToggle.addEventListener('click', toggleSlideshow);
 
     // Modal events
-    imageModal.addEventListener('hidden.bs.modal', () => {
+    imageModal.addEventListener('hidden.bs.modal', function() {
         stopSlideshow();
     });
 
-    imageModal.addEventListener('show.bs.modal', () => {
+    imageModal.addEventListener('show.bs.modal', function() {
         updateImagesList();
         stopSlideshow();
     });
@@ -161,11 +163,11 @@ document.addEventListener('DOMContentLoaded', function() {
     let touchStartX = 0;
     let touchEndX = 0;
 
-    modalImage.addEventListener('touchstart', (e) => {
+    modalImage.addEventListener('touchstart', function(e) {
         touchStartX = e.changedTouches[0].screenX;
     });
 
-    modalImage.addEventListener('touchend', (e) => {
+    modalImage.addEventListener('touchend', function(e) {
         touchEndX = e.changedTouches[0].screenX;
         handleSwipe();
     });
@@ -184,159 +186,196 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Infinite Scroll Implementation
-    class InfiniteScroll {
-        constructor() {
-            this.container = document.getElementById('gallery-container');
-            this.loadingIndicator = document.getElementById('loading-indicator');
-            
-            if (!this.container || !this.loadingIndicator) return;
-            
-            this.isLoading = false;
-            this.hasMorePages = this.container.dataset.hasNext === 'true';
-            this.currentPage = parseInt(this.container.dataset.nextPage) || 1;
-            this.observer = null;
-            
-            this.init();
+    function InfiniteScroll() {
+        this.container = document.getElementById('gallery-container');
+        this.loadingIndicator = document.getElementById('loading-indicator');
+        
+        if (!this.container || !this.loadingIndicator) return;
+        
+        this.isLoading = false;
+        this.hasMorePages = this.container.dataset.hasNext === 'true';
+        this.currentPage = parseInt(this.container.dataset.nextPage) || 1;
+        this.observer = null;
+        this.scrollThrottle = null;
+        this.throttleDelay = 250; // Increased throttle delay for better performance
+        
+        this.init();
+    }
+
+    InfiniteScroll.prototype.init = function() {
+        if (this.observer) {
+            this.observer.disconnect();
         }
 
-        init() {
-            this.observer = new IntersectionObserver(
-                (entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting && !this.isLoading && this.hasMorePages) {
-                            this.loadMoreImages();
+        const self = this;
+        
+        this.observer = new IntersectionObserver(
+            function(entries) {
+                if (self.scrollThrottle) {
+                    clearTimeout(self.scrollThrottle);
+                }
+                
+                self.scrollThrottle = setTimeout(function() {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting && !self.isLoading && self.hasMorePages) {
+                            self.loadMoreImages();
                         }
                     });
-                },
-                {
-                    root: null,
-                    rootMargin: '100px',
-                    threshold: 0.1
-                }
-            );
-
-            if (this.loadingIndicator) {
-                this.observer.observe(this.loadingIndicator);
+                    self.scrollThrottle = null;
+                }, self.throttleDelay);
+            },
+            {
+                root: null,
+                rootMargin: '200px',
+                threshold: 0.1
             }
+        );
+
+        if (this.loadingIndicator) {
+            this.observer.observe(this.loadingIndicator);
         }
+    };
 
-        async loadMoreImages() {
-            if (this.isLoading || !this.hasMorePages) return;
-            
-            try {
-                this.isLoading = true;
-                this.loadingIndicator.style.display = 'block';
+    InfiniteScroll.prototype.loadMoreImages = function() {
+        if (this.isLoading || !this.hasMorePages) return;
+        
+        this.isLoading = true;
+        this.loadingIndicator.style.display = 'block';
 
-                const response = await fetch('/load_more/' + this.currentPage);
+        const self = this;
+        
+        fetch('/load_more/' + this.currentPage)
+            .then(function(response) {
                 if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
-                
-                const data = await response.json();
-                
+                return response.json();
+            })
+            .then(function(data) {
                 if (data.images && data.images.length > 0) {
-                    // Create and append new gallery items
-                    for (let i = 0; i < data.images.length; i++) {
-                        const image = data.images[i];
+                    data.images.forEach(function(image) {
                         const galleryItem = document.createElement('div');
                         galleryItem.className = 'gallery-item';
-                        galleryItem.dataset.imageId = image.id;
+                        galleryItem.setAttribute('data-image-id', image.id);
                         
-                        galleryItem.innerHTML = `
-                            <img src="${image.url}" 
-                                 alt="${image.original_filename}"
-                                 data-img-src="${image.url}">
-                            <div class="gallery-item-overlay">
-                                <div class="image-actions">
-                                    <button class="btn btn-light view-image">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                    <button class="btn btn-danger delete-image" 
-                                            data-image-id="${image.id}">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        `;
+                        galleryItem.innerHTML = [
+                            '<img src="' + image.url + '"',
+                            '     alt="' + image.original_filename + '"',
+                            '     data-img-src="' + image.url + '">',
+                            '<div class="gallery-item-overlay">',
+                            '    <div class="image-actions">',
+                            '        <button class="btn btn-light view-image">',
+                            '            <i class="fas fa-search"></i>',
+                            '        </button>',
+                            '        <button class="btn btn-danger delete-image"',
+                            '                onclick="return confirm(\'Are you sure you want to delete this image?\')"',
+                            '                data-image-id="' + image.id + '">',
+                            '            <i class="fas fa-trash"></i>',
+                            '        </button>',
+                            '    </div>',
+                            '</div>'
+                        ].join('\n');
                         
-                        this.container.insertBefore(galleryItem, this.loadingIndicator);
-                    }
+                        self.container.insertBefore(galleryItem, self.loadingIndicator);
+                    });
 
                     // Update pagination state
-                    this.currentPage = data.next_page;
-                    this.hasMorePages = data.has_next;
+                    self.currentPage = data.next_page;
+                    self.hasMorePages = data.has_next;
                     
                     // Bind events to new elements
-                    this.bindNewElementEvents();
+                    self.bindNewElementEvents();
                     
                     // Update modal image list
-                    if (typeof updateImagesList === 'function') {
-                        updateImagesList();
-                    }
+                    updateImagesList();
                 }
 
-                if (!this.hasMorePages) {
-                    this.observer.unobserve(this.loadingIndicator);
-                    this.loadingIndicator.style.display = 'none';
+                if (!self.hasMorePages) {
+                    self.observer.unobserve(self.loadingIndicator);
+                    self.loadingIndicator.style.display = 'none';
                 }
-
-            } catch (error) {
+            })
+            .catch(function(error) {
                 console.error('Error loading more images:', error);
-                this.loadingIndicator.innerHTML = `
-                    <div class="alert alert-danger">
-                        Error loading images. <button class="btn btn-link" onclick="infiniteScroll.loadMoreImages()">Retry</button>
-                    </div>`;
-            } finally {
-                this.isLoading = false;
-                if (this.hasMorePages) {
-                    this.loadingIndicator.style.display = 'none';
+                self.loadingIndicator.innerHTML = [
+                    '<div class="alert alert-danger">',
+                    '    Error loading images. <button class="btn btn-link" onclick="infiniteScroll.loadMoreImages()">Retry</button>',
+                    '</div>'
+                ].join('\n');
+            })
+            .finally(function() {
+                self.isLoading = false;
+                if (self.hasMorePages) {
+                    self.loadingIndicator.style.display = 'none';
                 }
-            }
-        }
-
-        bindNewElementEvents() {
-            const newItems = this.container.querySelectorAll('.gallery-item:not([data-bound])');
-            newItems.forEach((item) => {
-                const viewBtn = item.querySelector('.view-image');
-                if (viewBtn) {
-                    viewBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const index = Array.from(document.querySelectorAll('.gallery-item')).indexOf(item);
-                        showImage(index);
-                        modalInstance.show();
-                    });
-                }
-                
-                const deleteBtn = item.querySelector('.delete-image');
-                if (deleteBtn) {
-                    deleteBtn.addEventListener('click', async (e) => {
-                        e.preventDefault();
-                        if (!confirm('Are you sure you want to delete this image?')) return;
-                        
-                        const imageId = deleteBtn.dataset.imageId;
-                        try {
-                            const response = await fetch(`/delete/${imageId}`, {
-                                method: 'DELETE'
-                            });
-                            const data = await response.json();
-                            if (data.success) {
-                                item.remove();
-                                updateImagesList();
-                            } else {
-                                throw new Error(data.message);
-                            }
-                        } catch (error) {
-                            console.error('Error deleting image:', error);
-                            alert('Failed to delete image. Please try again.');
-                        }
-                    });
-                }
-                
-                item.dataset.bound = 'true';
             });
+    };
+
+    InfiniteScroll.prototype.bindNewElementEvents = function() {
+        const newItems = this.container.querySelectorAll('.gallery-item:not([data-bound])');
+        const items = Array.prototype.slice.call(document.querySelectorAll('.gallery-item'));
+        
+        Array.prototype.forEach.call(newItems, function(item) {
+            const viewBtn = item.querySelector('.view-image');
+            
+            if (viewBtn) {
+                viewBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const index = items.indexOf(this.closest('.gallery-item'));
+                    showImage(index);
+                    modalInstance.show();
+                });
+            }
+            
+            const deleteBtn = item.querySelector('.delete-image');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const btn = this;
+                    if (!confirm('Are you sure you want to delete this image?')) return;
+                    
+                    const imageId = btn.dataset.imageId;
+                    fetch('/delete/' + imageId, {
+                        method: 'DELETE'
+                    })
+                    .then(function(response) {
+                        return response.json();
+                    })
+                    .then(function(data) {
+                        if (data.success) {
+                            btn.closest('.gallery-item').remove();
+                            updateImagesList();
+                        } else {
+                            throw new Error(data.message);
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Error deleting image:', error);
+                        alert('Failed to delete image. Please try again.');
+                    });
+                });
+            }
+            
+            item.setAttribute('data-bound', 'true');
+        });
+    };
+
+    InfiniteScroll.prototype.cleanup = function() {
+        if (this.observer) {
+            this.observer.disconnect();
         }
-    }
+        if (this.scrollThrottle) {
+            clearTimeout(this.scrollThrottle);
+        }
+    };
 
     // Initialize infinite scroll
     const infiniteScroll = new InfiniteScroll();
     window.infiniteScroll = infiniteScroll;
+
+    // Cleanup on page unload
+    window.addEventListener('unload', function() {
+        if (infiniteScroll) {
+            infiniteScroll.cleanup();
+        }
+    });
 });
