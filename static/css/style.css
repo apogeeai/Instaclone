@@ -3,6 +3,8 @@
     --text-primary: #262626;
     --border-color: #dbdbdb;
     --modal-bg: rgba(0, 0, 0, 0.85);
+    --navbar-bg: #f8f9fa;
+    --navbar-text: #262626;
 }
 
 [data-theme="dark"] {
@@ -10,6 +12,8 @@
     --text-primary: #ffffff;
     --border-color: #363636;
     --modal-bg: rgba(0, 0, 0, 0.95);
+    --navbar-bg: #1a1a1a;
+    --navbar-text: #ffffff;
 }
 
 body {
@@ -105,90 +109,65 @@ body {
     border: none;
 }
 
+.modal-body {
+    padding: 0;
+}
+
 .modal-image {
     max-height: 90vh;
-    width: auto;
     max-width: 100%;
-    opacity: 0;
-    transition: opacity 0.3s ease-in-out;
-}
-
-.modal-image.loaded {
-    opacity: 1;
-}
-
-.modal-dialog {
-    margin: 1rem;
-    max-width: 90vw;
-}
-
-/* Modal Navigation Styles */
-.modal-nav {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    font-size: 24px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    z-index: 1060;
-}
-
-.modal-nav:hover {
-    background: rgba(255, 255, 255, 0.4);
-}
-
-.modal-prev {
-    left: 1rem;
-}
-
-.modal-next {
-    right: 1rem;
-}
-
-.modal-nav.disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+    object-fit: contain;
 }
 
 .modal-close {
     position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 1060;
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.8);
     border: none;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    z-index: 1060;
     cursor: pointer;
     transition: background-color 0.3s;
 }
 
 .modal-close:hover {
-    background: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 1);
+}
+
+.modal-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.modal-prev {
+    left: 10px;
+}
+
+.modal-next {
+    right: 10px;
+}
+
+.modal-nav:hover {
+    background: rgba(255, 255, 255, 1);
 }
 
 .modal-controls {
     position: absolute;
-    bottom: 1rem;
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1060;
-    display: flex;
-    gap: 0.5rem;
 }
 
 .slideshow-toggle {
@@ -228,4 +207,85 @@ body {
 .upload-area.dragover {
     background-color: rgba(0, 123, 255, 0.1);
     border-color: #007bff;
+}
+
+/* Update modal and image positioning styles */
+.modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    margin: 30px auto;
+}
+
+.modal-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+    padding: 0;
+}
+
+.modal-image {
+    max-height: 85vh;
+    max-width: 95%;
+    object-fit: contain;
+    margin: auto;
+}
+
+/* Improve slideshow controls visibility */
+.modal-controls {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1060;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px;
+    border-radius: 20px;
+}
+
+.slideshow-toggle {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    padding: 8px 16px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.slideshow-toggle:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+.slideshow-toggle:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Navbar dark mode styles */
+.navbar {
+    background-color: var(--navbar-bg) !important;
+    transition: background-color 0.3s;
+}
+
+.navbar-light .navbar-brand,
+.navbar-light .navbar-nav .nav-link {
+    color: var(--navbar-text);
+}
+
+/* Form switch dark mode styles */
+.form-check-input {
+    background-color: var(--border-color);
+    border-color: var(--text-primary);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-check-label {
+    color: var(--text-primary);
 }

@@ -21,35 +21,39 @@
         </div>
     </div>
     {% endfor %}
-    <div id="loading-indicator" class="text-center mb-4">
+    
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="text-center mb-4" style="display: none;">
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
     </div>
 </div>
 
-<!-- Enhanced Image Modal with navigation -->
-<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true" style="z-index: 1050;">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
-            <div class="modal-body text-center p-0 position-relative">
-                <button type="button" class="modal-close" data-bs-dismiss="modal" aria-label="Close">
+            <div class="modal-body position-relative">
+                <!-- Close Button -->
+                <button type="button" class="modal-close" data-bs-dismiss="modal">
                     <i class="fas fa-times"></i>
                 </button>
                 
-                <!-- Navigation Arrows -->
-                <button class="modal-nav modal-prev" aria-label="Previous image">
+                <!-- Navigation Buttons -->
+                <button class="modal-nav modal-prev">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-                <button class="modal-nav modal-next" aria-label="Next image">
+                <button class="modal-nav modal-next">
                     <i class="fas fa-chevron-right"></i>
                 </button>
                 
+                <!-- Main Image -->
                 <img src="" class="modal-image" alt="Full size image">
                 
-                <!-- Slideshow Controls -->
+                <!-- Slideshow Control -->
                 <div class="modal-controls">
-                    <button class="btn btn-light btn-sm slideshow-toggle">
+                    <button class="slideshow-toggle">
                         <i class="fas fa-play"></i>
                     </button>
                 </div>
