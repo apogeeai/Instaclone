@@ -39,7 +39,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 app.py"
+args = "python app.py"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -54,7 +54,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 main.py"
+args = "python app.py"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -69,7 +69,7 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 /home/runner/app.py"
+args = "python3 app.py"
 waitForPort = 5000
 
 [[workflows.workflow]]
@@ -84,11 +84,11 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 app.py"
+args = "python3 -m flask --app app run --host=0.0.0.0 --port=5000"
 waitForPort = 5000
 
 [deployment]
-run = ["sh", "-c", "python3 main.py"]
+run = ["sh", "-c", "python3 -m flask --app app run --host=0.0.0.0 --port=5000"]
 
 [[ports]]
 localPort = 5000
