@@ -16,14 +16,38 @@ document.addEventListener('DOMContentLoaded', function() {
     // Infinite Scroll Implementation
     class InfiniteScroll {
         constructor() {
-            // Initialize DOM elements
+            try {
+                // Initialize and verify DOM elements
+                this.initializeElements();
+                
+                // Initialize state
+                this.initializeState();
+                
+                // Initialize components
+                this.initialize();
+
+                console.log('InfiniteScroll initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize InfiniteScroll:', error);
+                throw error;  // Re-throw to prevent partial initialization
+            }
+        }
+
+        initializeElements() {
+            // Required elements
             this.container = document.getElementById('gallery-container');
             this.loadingIndicator = document.getElementById('loading-indicator');
             this.imageModal = document.getElementById('imageModal');
             
-            if (!this.container || !this.loadingIndicator || !this.imageModal) {
-                console.warn('Some required elements not found for infinite scroll');
-                return;
+            // Verify required elements
+            if (!this.container) {
+                throw new Error('Gallery container element not found');
+            }
+            if (!this.loadingIndicator) {
+                throw new Error('Loading indicator element not found');
+            }
+            if (!this.imageModal) {
+                throw new Error('Image modal element not found');
             }
             
             // Initialize modal elements
@@ -33,10 +57,17 @@ document.addEventListener('DOMContentLoaded', function() {
             this.nextButton = this.imageModal.querySelector('.modal-next');
             this.slideshowToggle = this.imageModal.querySelector('.slideshow-toggle');
             
-            // Initialize state
+            // Verify modal elements
+            if (!this.modalImage || !this.prevButton || !this.nextButton || !this.slideshowToggle) {
+                throw new Error('Required modal elements not found');
+            }
+        }
+
+        initializeState() {
+            // Initialize state with validation
             this.isLoading = false;
-            this.hasMorePages = this.container.dataset.hasNext === 'true';
-            this.currentPage = parseInt(this.container.dataset.nextPage) || 1;
+            this.hasMorePages = this.validateHasMorePages();
+            this.currentPage = this.validateCurrentPage();
             this.currentImageIndex = 0;
             this.images = [];
             this.slideshowInterval = null;
@@ -45,9 +76,25 @@ document.addEventListener('DOMContentLoaded', function() {
             this.throttleTimeout = null;
             this.throttleDelay = 250;
             this.scrollAnimationFrame = null;
+        }
 
-            // Initialize components
-            this.initialize();
+        validateHasMorePages() {
+            const hasNext = this.container.dataset.hasNext;
+            if (typeof hasNext !== 'string') {
+                console.warn('data-has-next attribute not found, defaulting to false');
+                return false;
+            }
+            return hasNext === 'true';
+        }
+
+        validateCurrentPage() {
+            const nextPage = this.container.dataset.nextPage;
+            if (!nextPage) {
+                console.warn('data-next-page attribute not found, defaulting to 1');
+                return 1;
+            }
+            const page = parseInt(nextPage);
+            return isNaN(page) ? 1 : page;
         }
 
         initialize() {
@@ -172,6 +219,46 @@ document.addEventListener('DOMContentLoaded', function() {
             this.images = Array.from(document.querySelectorAll('.gallery-item img'));
         }
 
+        showLoadingIndicator() {
+            // First ensure the content is set
+            this.loadingIndicator.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div class="loading-text mt-2">Loading more images...</div>
+                </div>`;
+            
+            // Then make it visible with a slight delay to ensure smooth animation
+            requestAnimationFrame(() => {
+                this.loadingIndicator.style.display = 'block';
+                requestAnimationFrame(() => {
+                    this.loadingIndicator.classList.add('loading');
+                });
+            });
+        }
+
+        hideLoadingIndicator() {
+            // First remove the loading class to trigger the fade out
+            this.loadingIndicator.classList.remove('loading');
+            
+            // Wait for the transition to complete before hiding
+            setTimeout(() => {
+                this.loadingIndicator.style.display = 'none';
+            }, 300); // Match this with the CSS transition duration
+        }
+
+        showLoadingError(error) {
+            this.loadingIndicator.innerHTML = `
+                <div class="alert alert-danger">
+                    <p>Error loading images: ${error}</p>
+                    <button class="btn btn-link p-0" onclick="window.infiniteScroll.loadMoreImages()">
+                        Retry
+                    </button>
+                </div>`;
+            this.loadingIndicator.style.display = 'block';
+        }
+
         showImage(index) {
             if (index < 0 || index >= this.images.length) return;
             
@@ -257,13 +344,24 @@ document.addEventListener('DOMContentLoaded', function() {
             if (this.isLoading || !this.hasMorePages) return;
             
             this.isLoading = true;
-            this.loadingIndicator.style.display = 'block';
+            this.showLoadingIndicator();
+            
+            // Add a minimum loading time to prevent flickering
+            const loadingStartTime = Date.now();
+            const minLoadingTime = 500; // milliseconds
 
             try {
                 const response = await fetch(`/load_more/${this.currentPage}`);
                 if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
                 
                 const data = await response.json();
+                
+                // Ensure minimum loading time
+                const loadingEndTime = Date.now();
+                const loadingDuration = loadingEndTime - loadingStartTime;
+                if (loadingDuration < minLoadingTime) {
+                    await new Promise(resolve => setTimeout(resolve, minLoadingTime - loadingDuration));
+                }
                 
                 if (data.images && data.images.length > 0) {
                     for (const image of data.images) {
@@ -281,21 +379,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (!this.hasMorePages) {
                     this.observer.unobserve(this.loadingIndicator);
-                    this.loadingIndicator.style.display = 'none';
+                    this.hideLoadingIndicator();
                 }
             } catch (error) {
                 console.error('Error loading more images:', error);
-                this.loadingIndicator.innerHTML = `
-                    <div class="alert alert-danger">
-                        Error loading images. 
-                        <button class="btn btn-link" onclick="window.infiniteScroll.loadMoreImages()">
-                            Retry
-                        </button>
-                    </div>`;
+                this.showLoadingError(error.message);
             } finally {
                 this.isLoading = false;
                 if (this.hasMorePages) {
-                    this.loadingIndicator.style.display = 'none';
+                    this.hideLoadingIndicator();
                 }
             }
         }
@@ -388,12 +480,21 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Initialize infinite scroll
-    try {
-        window.infiniteScroll = new InfiniteScroll();
-    } catch (error) {
-        console.error('Failed to initialize infinite scroll:', error);
-    }
+    // Initialize infinite scroll with retry mechanism
+    const initializeInfiniteScroll = () => {
+        try {
+            if (!window.infiniteScroll) {
+                window.infiniteScroll = new InfiniteScroll();
+            }
+        } catch (error) {
+            console.error('Failed to initialize infinite scroll:', error);
+            // Retry initialization after a short delay
+            setTimeout(initializeInfiniteScroll, 1000);
+        }
+    };
+
+    // Start initialization
+    initializeInfiniteScroll();
 
     // Cleanup on page unload
     window.addEventListener('unload', () => {

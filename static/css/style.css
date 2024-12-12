@@ -100,6 +100,64 @@ body {
     transform: scale(1.05);
 }
 
+/* Loading Indicator Styles */
+#loading-indicator {
+    margin: 2rem 0;
+    text-align: center;
+    opacity: 0;
+    transition: all 0.3s ease-in-out;
+    width: 100%;
+    grid-column: 1 / -1;
+    display: none;
+    transform: translateY(20px);
+}
+
+#loading-indicator.loading {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.loading-spinner {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 3rem;
+    background: var(--bg-primary);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    border: 2px solid var(--border-color);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+    50% {
+        box-shadow: 0 12px 32px rgba(13, 110, 253, 0.25);
+    }
+    100% {
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+}
+
+.spinner-border {
+    width: 4rem;
+    height: 4rem;
+    color: #0d6efd;
+    border-width: 0.25rem;
+    animation: spinner-border 1s linear infinite;
+}
+
+.loading-text {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    font-weight: 500;
+}
+
+/* Modal Styles */
 .modal {
     background-color: var(--modal-bg);
 }
@@ -109,14 +167,27 @@ body {
     border: none;
 }
 
+.modal-dialog {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px);
+    margin: 30px auto;
+}
+
 .modal-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
     padding: 0;
 }
 
 .modal-image {
-    max-height: 90vh;
-    max-width: 100%;
+    max-height: 85vh;
+    max-width: 95%;
     object-fit: contain;
+    margin: auto;
 }
 
 .modal-close {
@@ -164,78 +235,6 @@ body {
 
 .modal-controls {
     position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1060;
-}
-
-.slideshow-toggle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-}
-
-.slideshow-toggle:hover {
-    background: rgba(255, 255, 255, 0.4);
-}
-
-#loading-indicator {
-    margin-top: 2rem;
-    margin-bottom: 2rem;
-}
-
-.spinner-border {
-    width: 3rem;
-    height: 3rem;
-}
-
-.upload-area {
-    border: 2px dashed var(--border-color);
-    padding: 2rem;
-    text-align: center;
-    margin: 2rem 0;
-    border-radius: 8px;
-}
-
-.upload-area.dragover {
-    background-color: rgba(0, 123, 255, 0.1);
-    border-color: #007bff;
-}
-
-/* Update modal and image positioning styles */
-.modal-dialog {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: calc(100vh - 60px);
-    margin: 30px auto;
-}
-
-.modal-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 200px;
-    padding: 0;
-}
-
-.modal-image {
-    max-height: 85vh;
-    max-width: 95%;
-    object-fit: contain;
-    margin: auto;
-}
-
-/* Improve slideshow controls visibility */
-.modal-controls {
-    position: absolute;
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
@@ -269,7 +268,7 @@ body {
     border-color: rgba(255, 255, 255, 0.8);
 }
 
-/* Navbar dark mode styles */
+/* Navbar Styles */
 .navbar {
     background-color: var(--navbar-bg) !important;
     transition: background-color 0.3s;
@@ -280,7 +279,7 @@ body {
     color: var(--navbar-text);
 }
 
-/* Form switch dark mode styles */
+/* Form Switch Styles */
 .form-check-input {
     background-color: var(--border-color);
     border-color: var(--text-primary);
@@ -293,4 +292,17 @@ body {
 
 .form-check-label {
     color: var(--text-primary);
+}
+
+.upload-area {
+    border: 2px dashed var(--border-color);
+    padding: 2rem;
+    text-align: center;
+    margin: 2rem 0;
+    border-radius: 8px;
+}
+
+.upload-area.dragover {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-color: #007bff;
 }
