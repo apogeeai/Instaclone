@@ -25,8 +25,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Initialize components
                 this.initialize();
-
-                console.log('InfiniteScroll initialized successfully');
+                
+                // Log successful initialization
+                console.log('InfiniteScroll initialized successfully', {
+                    hasMorePages: this.hasMorePages,
+                    currentPage: this.currentPage,
+                    containerState: {
+                        nextPage: this.container.dataset.nextPage,
+                        hasNext: this.container.dataset.hasNext
+                    }
+                });
             } catch (error) {
                 console.error('Failed to initialize InfiniteScroll:', error);
                 throw error;  // Re-throw to prevent partial initialization
@@ -64,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         initializeState() {
-            // Initialize state with validation
+            // Initialize state with validation and persistence
             this.isLoading = false;
             this.hasMorePages = this.validateHasMorePages();
             this.currentPage = this.validateCurrentPage();
@@ -74,8 +82,29 @@ document.addEventListener('DOMContentLoaded', function() {
             this.slideshowDelay = 3000;
             this.observer = null;
             this.throttleTimeout = null;
-            this.throttleDelay = 250;
+            this.throttleDelay = 150;
             this.scrollAnimationFrame = null;
+            this.retryCount = 0;
+            this.maxRetries = 3;
+            
+            // Restore scroll position if available
+            const savedScrollPosition = sessionStorage.getItem('scrollPosition');
+            if (savedScrollPosition) {
+                window.scrollTo(0, parseInt(savedScrollPosition));
+                sessionStorage.removeItem('scrollPosition');
+            }
+            
+            // Log initial state for debugging
+            console.log('Initial state:', {
+                hasMorePages: this.hasMorePages,
+                currentPage: this.currentPage,
+                savedScrollPosition: savedScrollPosition
+            });
+            
+            // Save state before page unload
+            window.addEventListener('beforeunload', () => {
+                sessionStorage.setItem('scrollPosition', window.scrollY.toString());
+            });
         }
 
         validateHasMorePages() {
@@ -84,17 +113,36 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.warn('data-has-next attribute not found, defaulting to false');
                 return false;
             }
-            return hasNext === 'true';
+            // Update DOM to ensure consistency
+            const hasMorePages = hasNext === 'true';
+            this.container.dataset.hasNext = hasMorePages.toString();
+            return hasMorePages;
         }
 
         validateCurrentPage() {
-            const nextPage = this.container.dataset.nextPage;
-            if (!nextPage) {
-                console.warn('data-next-page attribute not found, defaulting to 1');
-                return 1;
+            let nextPage;
+            
+            // Try to get from sessionStorage first
+            const storedPage = sessionStorage.getItem('currentPage');
+            if (storedPage) {
+                nextPage = parseInt(storedPage);
+                if (!isNaN(nextPage)) {
+                    console.log('Restored page from session:', nextPage);
+                    return nextPage;
+                }
             }
-            const page = parseInt(nextPage);
-            return isNaN(page) ? 1 : page;
+            
+            // Fallback to dataset
+            nextPage = parseInt(this.container.dataset.nextPage);
+            if (isNaN(nextPage)) {
+                console.warn('Invalid next page, defaulting to 1');
+                nextPage = 1;
+            }
+            
+            // Update DOM and session storage
+            this.container.dataset.nextPage = nextPage.toString();
+            sessionStorage.setItem('currentPage', nextPage.toString());
+            return nextPage;
         }
 
         initialize() {
@@ -194,15 +242,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (this.throttleTimeout) return;
 
                 this.throttleTimeout = setTimeout(() => {
-                    const scrollPosition = window.innerHeight + window.pageYOffset;
-                    const threshold = document.documentElement.scrollHeight - 800;
-                    
-                    if (scrollPosition >= threshold && !this.isLoading && this.hasMorePages) {
-                        this.loadMoreImages();
+                    // Only process scroll if we're not loading and have more pages
+                    if (!this.isLoading && this.hasMorePages) {
+                        const scrollPosition = window.scrollY + window.innerHeight;
+                        const threshold = document.documentElement.scrollHeight - 1000;
+                        
+                        if (scrollPosition >= threshold) {
+                            console.log('Scroll threshold reached, loading more images...');
+                            this.loadMoreImages();
+                        }
                     }
+                    
                     this.throttleTimeout = null;
                 }, this.throttleDelay);
             });
+            
+            // Cleanup any existing animation frame when leaving the page
+            window.addEventListener('unload', () => {
+                if (this.scrollAnimationFrame) {
+                    cancelAnimationFrame(this.scrollAnimationFrame);
+                }
+            }, { once: true });
         }
 
         handleResize() {
@@ -324,17 +384,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 (entries) => {
                     entries.forEach((entry) => {
                         if (entry.isIntersecting && !this.isLoading && this.hasMorePages) {
+                            console.log('IntersectionObserver triggered loading');
                             this.loadMoreImages();
                         }
                     });
                 },
                 {
                     root: null,
-                    rootMargin: '200px',
-                    threshold: 0.1
+                    rootMargin: '500px',
+                    threshold: 0
                 }
             );
 
+            // Create and observe a sentinel element at the bottom of the container
+            const sentinel = document.createElement('div');
+            sentinel.style.height = '1px';
+            sentinel.style.width = '100%';
+            sentinel.style.gridColumn = '1 / -1';
+            this.container.appendChild(sentinel);
+            this.observer.observe(sentinel);
+
+            // Also observe the loading indicator
             if (this.loadingIndicator) {
                 this.observer.observe(this.loadingIndicator);
             }
@@ -352,9 +422,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
             try {
                 const response = await fetch(`/load_more/${this.currentPage}`);
-                if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 
                 const data = await response.json();
+                if (!data) {
+                    throw new Error('Invalid response data');
+                }
+                
+                // Reset retry count on successful load
+                this.retryCount = 0;
                 
                 // Ensure minimum loading time
                 const loadingEndTime = Date.now();
@@ -364,17 +442,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 if (data.images && data.images.length > 0) {
+                    const fragment = document.createDocumentFragment();
                     for (const image of data.images) {
                         const galleryItem = await this.createGalleryItem(image);
                         if (galleryItem) {
-                            this.container.insertBefore(galleryItem, this.loadingIndicator);
+                            fragment.appendChild(galleryItem);
                             this.setupGalleryItemEventListeners(galleryItem);
                         }
                     }
                     
+                    // Batch DOM updates
+                    this.container.insertBefore(fragment, this.loadingIndicator);
+                    
+                    // Update state and persist it
                     this.currentPage = data.next_page;
                     this.hasMorePages = data.has_next;
+                    
+                    // Update DOM state
+                    this.container.dataset.nextPage = this.currentPage.toString();
+                    this.container.dataset.hasNext = this.hasMorePages.toString();
+                    
+                    // Persist state to session
+                    sessionStorage.setItem('currentPage', this.currentPage.toString());
+                    sessionStorage.setItem('hasMorePages', this.hasMorePages.toString());
+                    
+                    // Update images list after DOM changes
                     this.updateImagesList();
+                    
+                    console.log('State updated:', {
+                        currentPage: this.currentPage,
+                        hasMorePages: this.hasMorePages,
+                        imagesCount: this.images.length
+                    });
                 }
 
                 if (!this.hasMorePages) {
@@ -383,7 +482,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Error loading more images:', error);
-                this.showLoadingError(error.message);
+                this.retryCount++;
+                
+                if (this.retryCount < this.maxRetries) {
+                    console.log(`Retrying... Attempt ${this.retryCount} of ${this.maxRetries}`);
+                    setTimeout(() => this.loadMoreImages(), 1000 * this.retryCount);
+                } else {
+                    this.showLoadingError(error.message);
+                }
             } finally {
                 this.isLoading = false;
                 if (this.hasMorePages) {
