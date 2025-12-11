@@ -12,4 +12,5 @@ dependencies = [
     "requests>=2.32.3",
     "sqlalchemy",
     "werkzeug",
+    "gunicorn>=23.0.0",
 ]
