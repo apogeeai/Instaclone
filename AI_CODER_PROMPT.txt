@@ -1,0 +1,169 @@
+I need you to style my existing image thumbnails to match this exact design specification. My site already has image thumbnails - I just need the CSS and HTML structure updated to match these specifications:
+
+**BACKGROUND COLOR:**
+- Light mode: #ffffff
+- Dark mode: #141414
+
+**HEADER/NAVBAR:**
+- Height: 56px
+- Background: #f8f9fa (light) / #1a1a1a (dark)
+
+**THUMBNAIL GRID:**
+- Container: Use responsive max-width container (Bootstrap-style: 576px, 768px, 992px, 1200px, 1400px)
+- Grid layout: CSS Grid with `repeat(auto-fill, minmax(300px, 1fr))`
+- Gap between thumbnails: exactly 1rem (16px)
+- Padding around grid: 1rem (16px)
+
+**THUMBNAIL DIMENSIONS:**
+- Width: Responsive, minimum 300px per column
+- Height: Square (use padding-bottom: 100% technique)
+- Border radius: exactly 3px
+- Overflow: hidden
+
+**HOVER EFFECTS:**
+- Image zooms to scale(1.05) on hover (0.3s transition)
+- Dark overlay appears: rgba(0, 0, 0, 0.5) with 0.3s opacity transition
+- Magnifying glass icon (Font Awesome fa-search) appears centered in overlay
+- Icon button: Light button, circular, 48px × 48px, centered
+
+**ANIMATION:**
+- Items fade in from below on load: opacity 0 → 1, translateY(20px) → translateY(0)
+- Duration: 0.5s ease
+- Animation name: fadeInUp
+
+**REQUIRED CSS:**
+
+```css
+:root {
+    --bg-primary: #ffffff;
+    --text-primary: #262626;
+    --navbar-bg: #f8f9fa;
+}
+
+[data-theme="dark"] {
+    --bg-primary: #141414;
+    --text-primary: #ffffff;
+    --navbar-bg: #1a1a1a;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.navbar {
+    background-color: var(--navbar-bg) !important;
+    height: 56px;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.gallery-item {
+    position: relative;
+    padding-bottom: 100%;
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 3px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s ease forwards;
+}
+
+.gallery-item img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.gallery-item:hover img {
+    transform: scale(1.05);
+}
+
+.gallery-item-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.gallery-item:hover .gallery-item-overlay {
+    opacity: 1;
+}
+
+.image-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.view-image {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.view-image:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.view-image i {
+    color: #262626;
+    font-size: 1.2rem;
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+```
+
+**REQUIRED HTML STRUCTURE:**
+
+Each thumbnail should have this structure:
+```html
+<div class="gallery-item">
+    <img src="image-url.jpg" alt="description" data-img-src="image-url.jpg">
+    <div class="gallery-item-overlay">
+        <div class="image-actions">
+            <button class="btn btn-light view-image">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+</div>
+```
+
+**REQUIRED DEPENDENCIES:**
+- Font Awesome 6.0.0 for icons: https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css
+
+**JAVASCRIPT (for opening images):**
+When the magnifying glass icon is clicked, it should open the image in a modal/lightbox. The image source should come from the img's `data-img-src` attribute or `src` attribute.
+
+Please implement this design exactly as specified. Match the spacing (16px gap), border radius (3px), hover zoom (1.05 scale), overlay opacity (0.5), and all other specifications precisely.
+
