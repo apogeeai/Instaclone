@@ -81,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
             this.slideshowInterval = null;
             this.slideshowDelay = 3000;
             this.observer = null;
+            this.sentinel = null;
             this.throttleTimeout = null;
             this.throttleDelay = 150;
             this.scrollAnimationFrame = null;
@@ -376,8 +377,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         setupIntersectionObserver() {
+            // Disconnect existing observer
             if (this.observer) {
                 this.observer.disconnect();
+            }
+
+            // Remove old sentinel if it exists
+            if (this.sentinel && this.sentinel.parentNode) {
+                this.sentinel.parentNode.removeChild(this.sentinel);
             }
 
             this.observer = new IntersectionObserver(
@@ -397,12 +404,12 @@ document.addEventListener('DOMContentLoaded', function() {
             );
 
             // Create and observe a sentinel element at the bottom of the container
-            const sentinel = document.createElement('div');
-            sentinel.style.height = '1px';
-            sentinel.style.width = '100%';
-            sentinel.style.gridColumn = '1 / -1';
-            this.container.appendChild(sentinel);
-            this.observer.observe(sentinel);
+            this.sentinel = document.createElement('div');
+            this.sentinel.style.height = '1px';
+            this.sentinel.style.width = '100%';
+            this.sentinel.style.gridColumn = '1 / -1';
+            this.container.appendChild(this.sentinel);
+            this.observer.observe(this.sentinel);
 
             // Also observe the loading indicator
             if (this.loadingIndicator) {
@@ -573,6 +580,9 @@ document.addEventListener('DOMContentLoaded', function() {
         cleanup() {
             if (this.observer) {
                 this.observer.disconnect();
+            }
+            if (this.sentinel && this.sentinel.parentNode) {
+                this.sentinel.parentNode.removeChild(this.sentinel);
             }
             if (this.throttleTimeout) {
                 clearTimeout(this.throttleTimeout);
